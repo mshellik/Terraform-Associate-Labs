@@ -7,6 +7,14 @@ terraform {
   }
 }
 
+variable "instance_type"{
+  type = string
+}
+
+
+locals {
+  project_name = "terra_learn"
+}
 
 provider "aws" {
   region = "ap-southeast-2"
@@ -15,9 +23,35 @@ provider "aws" {
 
 resource "aws_instance" "server_000" {
   ami           = "ami-0cd2fd776297f621a"
-  instance_type = "t2.micro"
+  instance_type = var.instance_type
 
   tags = {
-    Name = "server_000"
+    name = "server_000-${local.project_name}"
+  }
+}
+
+output "instance_public_ip_addr" {
+  value       = aws_instance.server_000.public_ip
+  description = "The public IP address of the main server instance."
+}
+
+
+
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = "vpc_server_000"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["ap-southeast-2a"]
+  private_subnets = ["10.0.1.0/24"]
+  public_subnets  = ["10.0.101.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
+
+  tags = {
+    Terraform = "true"
+    Environment = "dev"
   }
 }
